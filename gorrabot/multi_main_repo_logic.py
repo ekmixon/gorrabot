@@ -27,7 +27,7 @@ def get_previous_or_next(project_name: str, branch_name: str, previous: bool) ->
     (e.g. tkt_previous_XXXX_extra; not tkt_next_XXXX_extra)
     """
     parent_branches: List[str] = config()['projects'][project_name]['multi-branch']
-    main_branch = re.match(regex_dict[project_name], branch_name).group('base')
+    main_branch = re.match(regex_dict[project_name], branch_name)['base']
     if previous:
         others_parent_main_branches = parent_branches[:parent_branches.index(main_branch)]
     else:
@@ -85,8 +85,8 @@ def ensure_upper_version_is_created(push: dict, branch_name: str, previous_branc
         {'source_branch': branch_name}
     )
     if any(mr['state'] != 'closed' for mr in mrs_for_this_branch):
-        logger.info(f"All MR are closed")
-        send_debug_message(f"All MR are closed")
+        logger.info("All MR are closed")
+        send_debug_message("All MR are closed")
         return "OK, All MR are closed"
 
     previous_mr = None
@@ -125,7 +125,7 @@ def ensure_upper_version_is_created(push: dict, branch_name: str, previous_branc
 
 
 def create_similar_mr(parent_mr: dict, project_name: str, branch_name: str) -> dict:
-    main_branch = re.match(regex_dict[project_name], branch_name).group('base')
+    main_branch = re.match(regex_dict[project_name], branch_name)['base']
     target_branch = f"{main_branch}/dev"
     new_title = (
         f"{parent_mr['title']} ({main_branch} edition)"
@@ -145,14 +145,13 @@ Created with <3 by @gorrabot, based on merge request
     new_labels.add(GitlabLabels.NO_CHANGELOG)
     new_labels = list(new_labels)
 
-    mr = {
+    return {
         'source_branch': branch_name,
         'target_branch': target_branch,
         'title': new_title,
         'description': new_description,
-        'labels': new_labels
+        'labels': new_labels,
     }
-    return mr
 
 
 def notify_unmerged_superior_mrs(mr_json: dict, project_name: str):

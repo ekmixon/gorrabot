@@ -14,11 +14,11 @@ def check_can_send_slack_messages(project_id=None):
 
     project_name = get_project_name(project_id)
 
-    send_message_to_slack = False
-    if project_name in config()['projects']:
-        send_message_to_slack = config()['projects'][project_name].get('send_message_to_slack', True)
-
-    return send_message_to_slack
+    return (
+        config()['projects'][project_name].get('send_message_to_slack', True)
+        if project_name in config()['projects']
+        else False
+    )
 
 
 def send_message_to_user(slack_user: str, text: str, slack_users_data: dict):
@@ -35,8 +35,9 @@ def send_message_to_user(slack_user: str, text: str, slack_users_data: dict):
             "text": text,
             "as_user": True
         }
-        res = slack_session.post(f"{SLACK_API_PREFIX}/chat.postMessage", params=params)
-        return res
+        return slack_session.post(
+            f"{SLACK_API_PREFIX}/chat.postMessage", params=params
+        )
 
 
 def send_message_to_channel(slack_channel: str, text: str, project_id=None, force_send=False):
@@ -52,8 +53,9 @@ def send_message_to_channel(slack_channel: str, text: str, project_id=None, forc
         "text": text,
         "link_names": True
     }
-    res = slack_session.post(f"{SLACK_API_PREFIX}/chat.postMessage", params=params)
-    return res
+    return slack_session.post(
+        f"{SLACK_API_PREFIX}/chat.postMessage", params=params
+    )
 
 
 def send_message_to_error_channel(text: str, project_id: int, force_send=False):

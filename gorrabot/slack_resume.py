@@ -46,10 +46,11 @@ logger = logging.getLogger(__name__)
 
 
 def get_waiting_users(issue):
-    users = [gitlab_to_slack_user(user[1:])
-             if user[0] == "@" else user for user in get_waiting_users_from_issue(issue) if len(user) > 0
-            ]
-    return users
+    return [
+        gitlab_to_slack_user(user[1:]) if user[0] == "@" else user
+        for user in get_waiting_users_from_issue(issue)
+        if len(user) > 0
+    ]
 
 
 def get_slack_user_from_mr_or_issue(elem: dict):
@@ -137,7 +138,7 @@ def main():
 
 if __name__ == '__main__':
     logger.info("Starting Slack Resume")
-    day_number = datetime.datetime.today().weekday()
+    day_number = datetime.datetime.now().weekday()
 
     if day_number < 5 or DRY_RUN is not None:
         main()

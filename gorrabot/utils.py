@@ -40,11 +40,11 @@ def has_flag(project_name, passed_flag):
 
 def get_related_issue_iid(mr: dict):
     branch = mr['source_branch'] if "source_branch" in mr else mr["object_attributes"]["source_branch"]
-    project_id = mr["project_id"] if "project_id" in mr else mr["project"]["id"]
+    project_id = mr.get("project_id", mr["project"]["id"])
     project_name = get_project_name(project_id)
     branch_regex = regex_dict[project_name]
     try:
-        iid = re.match(branch_regex, branch).group('iid')
+        iid = re.match(branch_regex, branch)['iid']
     except (IndexError, AttributeError):
         return
 
@@ -81,7 +81,7 @@ def fill_fields_based_on_issue(mr_json: dict):
     If the MR doesn't have a milestone, set it to the issue's
     milestone. Also update it.
     """
-    mr = mr_json["object_attributes"] if "object_attributes" in mr_json else mr_json
+    mr = mr_json.get("object_attributes", mr_json)
     issue_iid = get_related_issue_iid(mr_json)
     project_id = mr['source_project_id']
     if issue_iid is None:
@@ -132,12 +132,15 @@ def get_decision_issues(project_id: int):
 def get_waiting_users_from_issue(issue):
     description = issue["description"]
     desc_lines = [line.strip() for line in description.splitlines()]
-    match = list(filter(lambda line: re.match(r"WFD: .+", line), desc_lines))
-    users = []
-    if len(match) > 0:
-        users = [user.strip() for user in match[0][4:].split(",")]
-
-    return users
+    return (
+        [user.strip() for user in match[0][4:].split(",")]
+        if (
+            match := list(
+                filter(lambda line: re.match(r"WFD: .+", line), desc_lines)
+            )
+        )
+        else []
+    )
 
 
 def get_staled_merge_requests(project_id: int, wip=None):
@@ -167,29 +170,33 @@ def get_push_info(push, branch_name):
     """ Gets several attributes from the PR's json """
     project_name = push["repository"]["name"]
     branch_regex = regex_dict[project_name]
-    issue_iid = re.match(branch_regex, branch_name).group("iid")
+    issue_iid = re.match(branch_regex, branch_name)["iid"]
     project_id = push['project_id']
 
-    push_info = {
+    return {
         "project_name": project_name,
         "branch_regex": branch_regex,
         "issue_iid": issue_iid,
-        "project_id": project_id
+        "project_id": project_id,
     }
-
-    return push_info
 
 
 def create_report(notify_dict:dict,report_user):
-    report = json.dumps({
-        report_user: {
-            "stale_wip": len(notify_dict[report_user]["stale_wip"]),
-            "stale_no_wip": len(notify_dict[report_user]["stale_no_wip"]),
-            "waiting-decision": len(notify_dict[report_user]["waiting-decision"]),
-            "accepted-issues": report_accepted_issues(notify_dict[report_user]["accepted-issues"])
-        }
-    }, indent=4)
-    return report
+    return json.dumps(
+        {
+            report_user: {
+                "stale_wip": len(notify_dict[report_user]["stale_wip"]),
+                "stale_no_wip": len(notify_dict[report_user]["stale_no_wip"]),
+                "waiting-decision": len(
+                    notify_dict[report_user]["waiting-decision"]
+                ),
+                "accepted-issues": report_accepted_issues(
+                    notify_dict[report_user]["accepted-issues"]
+                ),
+            }
+        },
+        indent=4,
+    )
 
 
 def report_accepted_issues(accepted_issues:list):

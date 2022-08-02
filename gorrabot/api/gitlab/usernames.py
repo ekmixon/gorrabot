@@ -9,7 +9,7 @@ def get_username(data: dict):
         return data['author']['username']
 
     user_id = data['object_attributes']['author_id']
-    res = gitlab_session.get(GITLAB_API_PREFIX + f'/users/{user_id}')
+    res = gitlab_session.get(f'{GITLAB_API_PREFIX}/users/{user_id}')
     res.raise_for_status()
     return res.json()['username']
 
@@ -21,6 +21,6 @@ def get_usernames_from_mr_or_issue(data: dict):
         return [data['author']['username']]
 
     user_id = data['object_attributes']['author_id']
-    res = gitlab_session.get(GITLAB_API_PREFIX + f'/users/{user_id}')
+    res = gitlab_session.get(f'{GITLAB_API_PREFIX}/users/{user_id}')
     res.raise_for_status()
     return [res.json()['username']]

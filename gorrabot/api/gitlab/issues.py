@@ -3,8 +3,7 @@ from gorrabot.api.gitlab.utils import paginated_get
 
 
 def get_issue(project_id: int, iid: int):
-    url = '{}/projects/{}/issues/{}'.format(
-            GITLAB_API_PREFIX, project_id, iid)
+    url = f'{GITLAB_API_PREFIX}/projects/{project_id}/issues/{iid}'
     res = gitlab_session.get(url)
     if res.status_code == 404:
         return
@@ -30,8 +29,7 @@ def get_accepted_issues(project_id: int):
 
 
 def update_issue(project_id: int, iid: int, data: dict):
-    url = '{}/projects/{}/issues/{}'.format(
-            GITLAB_API_PREFIX, project_id, iid)
+    url = f'{GITLAB_API_PREFIX}/projects/{project_id}/issues/{iid}'
     res = gitlab_session.put(url, json=data)
     res.raise_for_status()
     return res.json()

@@ -243,11 +243,7 @@ def get_iteration(push: dict, branch_name: str) -> dict:
     # In order to get the last-used iteration, the list is reversed.
     iteration_info.reverse()
 
-    # NOTE: first element is selected because of GitLab's list response format.
-    iteration = iteration_info[0].get('iteration') \
-                if iteration_info else None
-
-    return iteration
+    return iteration_info[0].get('iteration') if iteration_info else None
 
 
 def check_required_attributes(push: dict, branch_name: str) -> NoReturn:
@@ -265,19 +261,13 @@ def check_required_attributes(push: dict, branch_name: str) -> NoReturn:
     messages = []
 
     labels: List[str] = issue['labels']
-    if (
-            all([not label.startswith("priority::") for label in labels]) and not
-            (
-                has_flag(project_name, "NO_PRIORITY")
-            )
+    if all(not label.startswith("priority::") for label in labels) and not (
+        has_flag(project_name, "NO_PRIORITY")
     ):
         logger.info("No priority label found")
         messages.append(MSG_WITHOUT_PRIORITY)
-    if (
-            all([not label.startswith("severity::") for label in labels]) and not
-            (
-                has_flag(project_name, "NO_SEVERITY")
-            )
+    if all(not label.startswith("severity::") for label in labels) and not (
+        has_flag(project_name, "NO_SEVERITY")
     ):
         logger.info("No severity label found")
         messages.append(MSG_WITHOUT_SEVERITY)
@@ -289,17 +279,16 @@ def check_required_attributes(push: dict, branch_name: str) -> NoReturn:
     if milestone is None:
         logger.info("Milestone not found")
         messages.append(MSG_WITHOUT_MILESTONE)
-    else:
-        if milestone['title'] in BACKLOG_MILESTONE:
-            logger.info("Backlog detected as milestone")
-            messages.append(MSG_BACKLOG_MILESTONE)
+    elif milestone['title'] in BACKLOG_MILESTONE:
+        logger.info("Backlog detected as milestone")
+        messages.append(MSG_BACKLOG_MILESTONE)
 
     iteration = get_iteration(push, branch_name)
     if iteration is None:
         logger.info("Iteration not found")
         messages.append(MSG_WITHOUT_ITERATION)
 
-    if len(messages) > 0:
+    if messages:
         error_message_list = '\n    * '.join([''] + messages)
         username = push["user_username"]
         if username in gitlab_to_slack_user_dict:
@@ -329,17 +318,16 @@ def has_changed_changelog(project_id: int, iid: int, project_name, only_md: bool
                         else '.md'
             if not only_md or filename.endswith(valid_ext):
                 return True
-            else:
-                if 'changelog_exceptions' in config()['projects'][project_name]:
-                    _, file_name = os.path.split(filename)
-                    if file_name in config()['projects'][project_name]['changelog_exceptions']:
-                        return True
+            if 'changelog_exceptions' in config()['projects'][project_name]:
+                _, file_name = os.path.split(filename)
+                if file_name in config()['projects'][project_name]['changelog_exceptions']:
+                    return True
 
     return False
 
 
 def get_changed_files(changes):
-    return set(change['new_path'] for change in changes)
+    return {change['new_path'] for change in changes}
 
 
 def sync_related_issue(mr_json: dict):
@@ -381,9 +369,6 @@ def sync_related_issue(mr_json: dict):
         new_labels.append(GitlabLabels.TEST)
     elif mr['state'] == 'merged':
         close = True
-    elif mr['state'] == 'closed':
-        pass
-
     new_labels = list(set(new_labels))
     data = {"labels": ','.join(new_labels)}
     if close:

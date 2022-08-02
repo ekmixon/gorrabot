@@ -18,12 +18,11 @@ def get_merge_requests(project_id: int, filters=None):
 
 
 def mr_url(project_id, iid):
-    return '{}/projects/{}/merge_requests/{}'.format(
-            GITLAB_API_PREFIX, project_id, iid)
+    return f'{GITLAB_API_PREFIX}/projects/{project_id}/merge_requests/{iid}'
 
 
 def get_mr_changes(project_id: int, iid: int):
-    url = mr_url(project_id, iid) + '/changes'
+    url = f'{mr_url(project_id, iid)}/changes'
     res = gitlab_session.get(url)
     res.raise_for_status()
     return res.json()['changes']
@@ -78,8 +77,8 @@ def update_mr(project_id: int, iid: int, data: dict):
 
 
 def get_related_merge_requests(project_id: int, issue_iid: int):
-    url = '{}/projects/{}/issues/{}/related_merge_requests'.format(
-            GITLAB_API_PREFIX, project_id, issue_iid)
+    url = f'{GITLAB_API_PREFIX}/projects/{project_id}/issues/{issue_iid}/related_merge_requests'
+
     return paginated_get(url)
 
 
@@ -93,7 +92,7 @@ def comment_mr(project_id: int, iid: int, body: str, can_be_duplicated=True, min
     if not can_be_duplicated:
         # Ugly hack to drop user mentions from body
         search_title = body.split(': ', 1)[-1]
-        res = gitlab_session.get(mr_url(project_id, iid) + '/notes')
+        res = gitlab_session.get(f'{mr_url(project_id, iid)}/notes')
         res.raise_for_status()
         comments = res.json()
         if any(search_title in comment['body']
@@ -105,7 +104,7 @@ def comment_mr(project_id: int, iid: int, body: str, can_be_duplicated=True, min
         # min_time_between_comments to duplicate them
         # Ugly hack to drop user mentions from body
         search_title = body.split(': ', 1)[-1]
-        res = gitlab_session.get(mr_url(project_id, iid) + '/notes')
+        res = gitlab_session.get(f'{mr_url(project_id, iid)}/notes')
         res.raise_for_status()
         comments = res.json()
 
@@ -118,7 +117,7 @@ def comment_mr(project_id: int, iid: int, body: str, can_be_duplicated=True, min
                for comment in comments):
             return
 
-    url = mr_url(project_id, iid) + '/notes'
+    url = f'{mr_url(project_id, iid)}/notes'
     data = {"body": body}
     res = gitlab_session.post(url, json=data)
     res.raise_for_status()
